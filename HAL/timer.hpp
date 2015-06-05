@@ -30,7 +30,9 @@ namespace HAL {
 
         public:
             static constexpr raw_timer_t* const periph_base = (raw_timer_t*) P::periph_base;
-            static constexpr uint32_t bus_freq = P::bus::bus_freq;
+            static constexpr uint32_t bus_freq() {
+                return P::bus::bus_freq();
+            }
 
             //***************************
             //* Methods                 *
@@ -80,7 +82,7 @@ namespace HAL {
 
             PwmMeasure(uint32_t counter_freq) : counter_freq(counter_freq) {
                 // Set count frequency
-                periph_base->PSC = (bus_freq / counter_freq) - 1;
+                periph_base->PSC = (bus_freq() / counter_freq) - 1;
 
                 // IC1 mapped on TI1
                 periph_base->CCMR1 |= __STM32_TIM_CCMR1_CC1S_0;
@@ -182,7 +184,7 @@ namespace HAL {
 
             PwmGenerator(uint32_t counter_freq, uint32_t period) : counter_freq(counter_freq), period(period) {
                 // TODO: document what this is doing, line by line (see PwmMeasure)
-                periph_base->PSC = (bus_freq / counter_freq) - 1;
+                periph_base->PSC = (bus_freq() / counter_freq) - 1;
                 periph_base->ARR = period;
                 periph_base->CCMR1 |= __STM32_TIM_CCMR1_OC1M_1;
                 periph_base->CCMR1 |= __STM32_TIM_CCMR1_OC1M_2;
@@ -231,7 +233,7 @@ namespace HAL {
                     counter_freq(counter_freq), reload_val(reload_val) {
                 // TODO: document what this is doing, line by line (see PwmMeasure)
 
-                periph_base->PSC = (bus_freq / counter_freq) - 1;
+                periph_base->PSC = (bus_freq() / counter_freq) - 1;
                 periph_base->ARR = reload_val;
                 periph_base->CNT = 0;
                 periph_base->CR1 |= __STM32_TIM_CR1_ARPE;

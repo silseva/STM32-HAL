@@ -6,12 +6,19 @@
 namespace HAL {
     namespace Bus {
         template <
-                __pointer _bus_base,
-                uint32_t _bus_freq
+                __pointer _bus_base
         >
         struct Bus {
             static constexpr __pointer bus_base = _bus_base;
-            static constexpr uint32_t bus_freq = _bus_freq;
+
+            static uint32_t bus_freq() {
+                // TODO: Do the magic
+            }
+
+            static void set_bus_freq(uint32_t new_freq) {
+                // TODO: Do the magic
+                bus_freq = new_freq;
+            }
         };
 
 
@@ -20,10 +27,10 @@ namespace HAL {
         //****************************************************************
 
         // Cortex M4 buses definition
-        typedef Bus<(__pointer) (__STM_32_APB1PERIPH_BASE), 0> APB1; // FIXME: set correct bus freqs
-        typedef Bus<(__pointer) (__STM_32_APB2PERIPH_BASE), 0> APB2;
-        typedef Bus<(__pointer) (__STM_32_AHB1PERIPH_BASE), 0> AHB1;
-        typedef Bus<(__pointer) (__STM_32_AHB2PERIPH_BASE), 0> AHB2;
+        typedef Bus<(__pointer) (__STM_32_APB1PERIPH_BASE)> APB1;
+        typedef Bus<(__pointer) (__STM_32_APB2PERIPH_BASE)> APB2;
+        typedef Bus<(__pointer) (__STM_32_AHB1PERIPH_BASE)> AHB1;
+        typedef Bus<(__pointer) (__STM_32_AHB2PERIPH_BASE)> AHB2;
     }
 }
 
