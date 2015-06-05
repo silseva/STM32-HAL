@@ -17,7 +17,6 @@ namespace HAL {
 
             static void set_bus_freq(uint32_t new_freq) {
                 // TODO: Do the magic
-                bus_freq = new_freq;
             }
         };
 
