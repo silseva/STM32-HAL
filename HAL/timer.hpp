@@ -48,13 +48,13 @@ namespace HAL {
 
             void enable() {
                 if (!is_enabled()) {
-                    periph_base->CR1 |= __STM32_CCR1_CEN; // FIXME
+                    periph_base->CR1 |= CCR1_CEN; // FIXME
                 }
             }
 
             void disable() {
                 if (is_enabled()) {
-                    periph_base->CR1 &= ~__STM32_CCR1_CEN; // FIXME
+                    periph_base->CR1 &= ~CCR1_CEN; // FIXME
                 }
             }
         };
@@ -85,22 +85,22 @@ namespace HAL {
                 periph_base->PSC = (bus_freq() / counter_freq) - 1;
 
                 // IC1 mapped on TI1
-                periph_base->CCMR1 |= __STM32_TIM_CCMR1_CC1S_0;
+                periph_base->CCMR1 |= TIM_CCMR1_CC1S_0;
 
                 // IC2 mapped on TI1
-                periph_base->CCMR1 |= __STM32_TIM_CCMR1_CC2S_1;
+                periph_base->CCMR1 |= TIM_CCMR1_CC2S_1;
 
                 // Trigger is T1FP1
-                periph_base->SMCR |= __STM32_TIM_SMCR_TS_2 | __STM32_TIM_SMCR_TS_0;
+                periph_base->SMCR |= TIM_SMCR_TS_2 | TIM_SMCR_TS_0;
 
                 // Timer in reset mode, input rising edge clears it
-                periph_base->SMCR |= __STM32_TIM_SMCR_SMS_2;
+                periph_base->SMCR |= TIM_SMCR_SMS_2;
 
                 // Channel 2 enabled, falling edge
-                periph_base->CCER |= __STM32_TIM_CCER_CC2P | __STM32_TIM_CCER_CC2E;
+                periph_base->CCER |= TIM_CCER_CC2P | TIM_CCER_CC2E;
 
                 // Capture enabled on channel 1, rising edge
-                periph_base->CCER |= __STM32_TIM_CCER_CC1E;
+                periph_base->CCER |= TIM_CCER_CC1E;
             }
 
             /**
@@ -112,8 +112,8 @@ namespace HAL {
              * @return true if the the flag is set, false otherwise
              */
             bool width_event() {
-                if (periph_base->SR & __STM32_TIM_SR_CC2IF) {
-                    periph_base->SR &= ~__STM32_TIM_SR_CC2IF;
+                if (periph_base->SR & TIM_SR_CC2IF) {
+                    periph_base->SR &= ~TIM_SR_CC2IF;
                     return true;
                 } else {
                     return false;
@@ -129,8 +129,8 @@ namespace HAL {
              * @return true if the the flag is set, false otherwise
              */
             bool period_event() {
-                if (periph_base->SR & __STM32_TIM_SR_CC1IF) {
-                    periph_base->SR &= ~__STM32_TIM_SR_CC1IF;
+                if (periph_base->SR & TIM_SR_CC1IF) {
+                    periph_base->SR &= ~TIM_SR_CC1IF;
                     return true;
                 } else {
                     return false;
@@ -186,15 +186,15 @@ namespace HAL {
                 // TODO: document what this is doing, line by line (see PwmMeasure)
                 periph_base->PSC = (bus_freq() / counter_freq) - 1;
                 periph_base->ARR = period;
-                periph_base->CCMR1 |= __STM32_TIM_CCMR1_OC1M_1;
-                periph_base->CCMR1 |= __STM32_TIM_CCMR1_OC1M_2;
-                periph_base->CCMR1 |= __STM32_TIM_CCMR1_OC1PE;
-                periph_base->CCER |= __STM32_TIM_CCER_CC1E;
+                periph_base->CCMR1 |= TIM_CCMR1_OC1M_1;
+                periph_base->CCMR1 |= TIM_CCMR1_OC1M_2;
+                periph_base->CCMR1 |= TIM_CCMR1_OC1PE;
+                periph_base->CCER |= TIM_CCER_CC1E;
                 periph_base->CCR1 = 0;
                 periph_base->CNT = 0;
-                periph_base->EGR = __STM32_TIM_EGR_UG;
-                periph_base->BDTR |= __STM32_TIM_BDTR_MOE;
-                periph_base->CR1 |= __STM32_TIM_CR1_ARPE;
+                periph_base->EGR = TIM_EGR_UG;
+                periph_base->BDTR |= TIM_BDTR_MOE;
+                periph_base->CR1 |= TIM_CR1_ARPE;
             }
 
             void set_duty(uint32_t value) {
@@ -236,7 +236,7 @@ namespace HAL {
                 periph_base->PSC = (bus_freq() / counter_freq) - 1;
                 periph_base->ARR = reload_val;
                 periph_base->CNT = 0;
-                periph_base->CR1 |= __STM32_TIM_CR1_ARPE;
+                periph_base->CR1 |= TIM_CR1_ARPE;
             }
 
             void clear() {
