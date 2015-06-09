@@ -17,17 +17,23 @@ namespace HAL {
             static constexpr __mask enable_bit = _enable_bit;
 
             static void enable() {
+                auto enable_register = (uint32_t *) bus::enable_register;
+
                 if (enable_bit)
-                    *(bus::enable_register) |= enable_bit;
+                    *enable_register |= enable_bit;
             }
 
             static void disable() {
+                auto enable_register = (uint32_t *) bus::enable_register;
+
                 if (enable_bit)
-                    *(bus::enable_register) &= ~enable_bit;
+                    *enable_register &= ~enable_bit;
             }
 
             static bool is_enabled() {
-                return (!enable_bit || (*(bus::enable_register) & enable_bit));
+                auto enable_register = (uint32_t *) bus::enable_register;
+
+                return (!enable_bit || (*enable_register & enable_bit));
             }
         };
 
