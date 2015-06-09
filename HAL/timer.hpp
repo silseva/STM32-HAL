@@ -38,8 +38,13 @@ namespace HAL {
             //* Methods                 *
             //***************************
         public:
+            TimerBase() {
+                P::enable();
+            }
+
             ~TimerBase() {
                 disable();
+                P::disable();
             }
 
             bool is_enabled() const {

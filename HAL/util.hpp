@@ -13,6 +13,13 @@ namespace HAL {
      * things work.
      */
     typedef uint32_t __pointer;
+
+    /**
+     * __mask (type)
+     *
+     * //TODO
+     */
+    typedef uint32_t __mask;
 }
 
 #endif //STM32_TIMER_HAL_UTIL_HPP
