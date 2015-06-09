@@ -27,7 +27,7 @@ namespace HAL {
             }
 
             static bool is_enabled() {
-                return (enable_bit || (*(bus::enable_register) & enable_bit));
+                return (!enable_bit || (*(bus::enable_register) & enable_bit));
             }
         };
 
