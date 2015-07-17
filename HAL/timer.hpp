@@ -53,13 +53,13 @@ namespace HAL {
 
             void enable() {
                 if (!is_enabled()) {
-                    periph_base->CR1 |= CCR1_CEN; // FIXME
+                    periph_base->CR1 |= TIM_CR1_CEN;
                 }
             }
 
             void disable() {
                 if (is_enabled()) {
-                    periph_base->CR1 &= ~CCR1_CEN; // FIXME
+                    periph_base->CR1 &= ~TIM_CR1_CEN;
                 }
             }
         };
@@ -67,8 +67,12 @@ namespace HAL {
         /**
          * PwmMeasure (type)
          *
-         * I have no clue about what this is.
-         * // TODO
+         * A timer peripheral is used to capture (aka measure)
+         * the period length and the Ton length of a PWM signal
+         * Please refer to MCU's datasheet and programming manual
+         * for further informations.
+         * The period value expressed in counter ticks is measured in CCR1,
+         * the Ton value in CCR2 
          */
         template<typename P>
         class PwmMeasure : public TimerBase<P> {
@@ -85,7 +89,12 @@ namespace HAL {
             using TimerBase<P>::periph_base;
             using TimerBase<P>::bus_freq;
 
-            PwmMeasure(uint32_t counter_freq) : counter_freq(counter_freq) {
+            /**
+             * @param counter_freq: the timer's counting frequency. It determines the tick width.
+             */
+            
+            PwmMeasure(uint32_t counter_freq) : counter_freq(counter_freq)
+            {
                 // Set count frequency
                 periph_base->PSC = (bus_freq() / counter_freq) - 1;
 
@@ -168,8 +177,10 @@ namespace HAL {
         /**
          * PwmGenerator (type)
          *
-         * I have no clue about what this is.
-         * // TODO
+         * A timer peripheral is used to generate a pwm signal
+         * Please refer to MCU's datasheet and programming manual
+         * for further informations.
+         * 
          */
         template<typename P>
         class PwmGenerator : public TimerBase<P> {
@@ -186,24 +197,48 @@ namespace HAL {
         public:
             using TimerBase<P>::periph_base;
             using TimerBase<P>::bus_freq;
+            
+            /**
+             * @param counter_freq: the timer's counting frequency. It determines the tick width.
+             * @param period: the generated pwm signal's period, in counter ticks
+             */
 
-            PwmGenerator(uint32_t counter_freq, uint32_t period) : counter_freq(counter_freq), period(period) {
-                // TODO: document what this is doing, line by line (see PwmMeasure)
+            PwmGenerator(uint32_t counter_freq, uint32_t period) : counter_freq(counter_freq), period(period)
+            {
+                // Set counter frequency through prescaler
                 periph_base->PSC = (bus_freq() / counter_freq) - 1;
+                
+                // Set pwm period through reload register value
                 periph_base->ARR = period;
+                
+                // Set timer's pwm mode 1, see programming manual
                 periph_base->CCMR1 |= TIM_CCMR1_OC1M_1;
                 periph_base->CCMR1 |= TIM_CCMR1_OC1M_2;
+                
+                // CCR1 preload at every update event
                 periph_base->CCMR1 |= TIM_CCMR1_OC1PE;
+                
+                // Enables channel 1
                 periph_base->CCER |= TIM_CCER_CC1E;
                 periph_base->CCR1 = 0;
                 periph_base->CNT = 0;
+                
+                // Dummy update event in order to load registers
                 periph_base->EGR = TIM_EGR_UG;
+                
+#ifndef _ARCH_CORTEXM3_STM32
+                // Only STM32F1xxx have it
                 periph_base->BDTR |= TIM_BDTR_MOE;
+#endif
+                // Auto reload enabled
                 periph_base->CR1 |= TIM_CR1_ARPE;
             }
 
+            /**
+             * Set pwm signal's ON period, expressed in counter ticks
+             */
+            
             void set_duty(uint32_t value) {
-                // TODO: Document the function
 
                 if (value <= period)
                     periph_base->CCR1 = value;
@@ -215,8 +250,9 @@ namespace HAL {
         /**
          * Counter (type)
          *
-         * I have no clue about what this is.
-         * //TODO
+         * A timer peripheral is used as a general
+         * purpuose clock-driven counter
+         * 
          */
         template<typename P>
         class Counter : public TimerBase<P> {
@@ -233,38 +269,70 @@ namespace HAL {
         public:
             using TimerBase<P>::periph_base;
             using TimerBase<P>::bus_freq;
+            
+            /**
+             * @param counter_freq: counter's tick frequency
+             * @param reload_val: counter's auto reload value
+             * 
+             */
 
             Counter(uint32_t counter_freq, uint32_t reload_val = 65535) :
-                    counter_freq(counter_freq), reload_val(reload_val) {
-                // TODO: document what this is doing, line by line (see PwmMeasure)
-
+                    counter_freq(counter_freq), reload_val(reload_val)
+            {
+                // Set counter frequency through prescaler
                 periph_base->PSC = (bus_freq() / counter_freq) - 1;
+                
+                // Set counter's auto reload value
                 periph_base->ARR = reload_val;
+                
+                // clear the counter
                 periph_base->CNT = 0;
+                
+                // enable auto reload
                 periph_base->CR1 |= TIM_CR1_ARPE;
             }
 
+            /**
+             * When called set counter's value to zero
+             */
+            
             void clear() {
-                // TODO: Document the function
-
+                
                 periph_base->CNT = 0;
             }
 
+            /**
+             * @return: current counter's value
+             */
+            
             uint32_t getValue() {
-                // TODO: Document the function
 
                 return periph_base->CNT;
             }
 
+            
+            /**
+             * @return: true if counter's value equal to or greater than
+             * parameter passed, false otherwise
+             * @param value: the value the counter's value is compared to
+             * 
+             */
             bool has_reached(uint32_t value) {
-                // TODO: Document the function
 
                 return (periph_base->CNT >= value);
             }
+            
+            /**
+             * When called it enables the counter (it starts counting)
+             */
 
             void start() {
                 TimerBase<P>::enable();
             }
+            
+            /**
+             * When called it disables the counter (it stops counting)
+             */
 
             void stop() {
                 TimerBase<P>::disable();
