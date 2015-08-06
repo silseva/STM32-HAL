@@ -82,8 +82,8 @@ namespace HAL {
             //* Members                 *
             //***************************
         private:
-            uint32_t counter_freq;
-            uint16_t reload_val;
+//             uint32_t counter_freq;
+//             uint16_t reload_val;
 
             //***************************
             //* Methods                 *
@@ -101,8 +101,8 @@ namespace HAL {
              * 
              */
 
-            BasicTimer(uint32_t counter_freq, uint16_t reload_val = 65535) :
-                    counter_freq(counter_freq), reload_val(reload_val)
+            BasicTimer(uint32_t counter_freq, uint16_t reload_val = 65535) /* :
+                    counter_freq(counter_freq), reload_val(reload_val) */
             {
                 // Set counter frequency through prescaler
                 periph_base->PSC = (bus_freq() / counter_freq) - 1;
@@ -197,8 +197,18 @@ namespace HAL {
             }
             
             /**
-             * Sets auto reload register value.
+             * Gets the prescaler value.
+             * @return actual prescaler value
              * 
+             */
+            
+            uint16_t getPrescaler()
+            {
+                return (periph_base->PSC);
+            }            
+            
+            /**
+             * Sets auto reload register value. 
              * @param value: auto reload register value to be setPrescaler
              * 
              */
@@ -207,6 +217,17 @@ namespace HAL {
             {
                 periph_base->ARR = value;
             }
+            
+            /**
+             * Gets auto reload register value.
+             * @return actual auto-reload register value
+             * 
+             */
+            
+            uint32_t getAutoReload()
+            {
+                return (periph_base->ARR );
+            }            
             
             /**
              * Check if counter has reached auto reload value and, consequently, has rolled back to zero.
@@ -227,6 +248,209 @@ namespace HAL {
                 
                 return false;
             }
+        };
+        
+        /**
+         * PwmGenerator (type)
+         *
+         * A timer peripheral is used to generate a pwm signal and can support up to four channels
+         * Please not that NOT all the timer peripherals can support up to four channels, some can
+         * handle a maximum of two channels.
+         * 
+         * In order to make this class as general as possible actually only edge-aligned, pwm mode 1
+         * signal generation is covered
+         * 
+         * Please refer to MCU's datasheet and programming manual
+         * for further informations.
+         * 
+         */
+        template<typename P>
+        class PwmGenerator : public TimerBase<P> {
+            //***************************
+            //* Members                 *
+            //***************************
+        private:
+//             uint32_t counter_freq;
+            uint32_t period;
+
+            //*************************** 
+            //* Methods                 *
+            //***************************
+        public:
+            using TimerBase<P>::periph_base;
+            using TimerBase<P>::bus_freq;
+            
+            /**
+             * @param counter_freq: the timer's counter counting frequency. It determines the tick width.
+             * @param period: the generated pwm signal's period length expressed in counter ticks
+             * @param isAdvanced: set it to true if you are using advanced control timers (TIM1 & TIM8)
+             */
+
+            PwmGenerator(uint32_t counter_freq, uint32_t period, bool isAdvanced = false) : /* counter_freq(counter_freq),*/ period(period)
+            {
+                // Set counter frequency through prescaler
+                periph_base->PSC = (bus_freq() / counter_freq) - 1;
+                
+                // Set pwm period through reload register value
+                periph_base->ARR = period;
+                
+                //clear counter register
+                periph_base->CNT = 0;
+                
+                // Dummy update event in order to load registers
+                periph_base->EGR = TIM_EGR_UG;
+                
+                /* this is a workaround made because advanced control timers must
+                 * have MOE bit set in order to have outputs working properly.
+                 * If MOE bit is cleared no output signal is generated at all */
+                
+                if(isAdvanced)
+                    periph_base->BDTR |= TIM_BDTR_MOE;
+
+                // Auto reload enabled
+                periph_base->CR1 |= TIM_CR1_ARPE;
+            }
+            
+            /**
+             * Starts the timer. Calling this function makes the timer generating
+             * pwm signal(s) on its output(s)
+             */
+            void start()
+            {
+                if(TimerBase<P>::is_enabled())
+                    return;
+                
+                TimerBase<P>::enable();
+            }
+            
+            /**
+             * Stops the timer. Calling this function makes the timer stop
+             * generating pwm signal(s) on its output(s)
+             */
+            void stop()
+            {
+                if(!TimerBase<P>::is_enabled())
+                    return;
+                
+                TimerBase<P>::disable();
+            }           
+            
+            /**
+             * Enables a channel. Calling this function will "connect" the channel to the
+             * peripheral, making the corresponding output pin generating the pwm signal.
+             * This function must be called with timer stopped.
+             * 
+             * NOTE: pin initialization to alternate mode and, eventually, alternate mode
+             * mapping isn't done here, so it MUST be done somewhere before calling this function.
+             * 
+             * @param channel: the channel number, between 1 and 4. Please note that not all
+             * the timers have four channels!!
+             * 
+             * TODO: make this function thread safe
+             */
+            
+            void enable(uint8_t channel)
+            {
+                if(TimerBase<P>::is_enabled())
+                    return;
+                
+                switch(channel)
+                {
+                    case 1:
+                        periph_base->CCMR1 |= TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1PE;
+                        periph_base->CCER |= TIM_CCER_CC1E;
+                        break;
+                    
+                    case 2:
+                        periph_base->CCMR1 |= TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1 | TIM_CCMR1_OC2PE;
+                        periph_base->CCER |= TIM_CCER_CC2E;
+                        break;  
+                    
+                    case 3:
+                        periph_base->CCMR1 |= TIM_CCMR1_OC3M_2 | TIM_CCMR1_OC3M_1 | TIM_CCMR1_OC3PE;
+                        periph_base->CCER |= TIM_CCER_CC3E;
+                        break;
+                        
+                   case 4:
+                        periph_base->CCMR1 |= TIM_CCMR1_OC4M_2 | TIM_CCMR1_OC4M_1 | TIM_CCMR1_OC4PE;
+                        periph_base->CCER |= TIM_CCER_CC4E;
+                        break;
+                }
+            }
+            
+            /**
+             * Disables a channel. Calling this function will "disconnect" the channel from the
+             * peripheral, providing the corresponding output pin from generating the pwm signal.
+             * This function must be called with timer stopped.
+             * 
+             * @param channel: the channel number, between 1 and 4. Please note that not all
+             * the timers have four channels!!
+             * 
+             * TODO: make this function thread safe
+             */
+            
+            void disable(uint8_t channel)
+            {
+                if(TimerBase<P>::is_enabled())
+                    return;
+                
+                switch(channel)
+                {
+                    case 1:
+                        periph_base->CCER &= ~TIM_CCER_CC1E;
+                        break;
+                    
+                    case 2:
+                        periph_base->CCER &= ~TIM_CCER_CC2E;
+                        break;  
+                    
+                    case 3:
+                        periph_base->CCER &= ~TIM_CCER_CC3E;
+                        break;
+                        
+                   case 4:
+                        periph_base->CCER &= ~TIM_CCER_CC4E;
+                        break;
+                }
+            }
+            
+            /**
+             * Sets channel's pwm signal logical High value duration expressed in counter ticks.
+             * If value is equal to zero the output will be permanently low, if value is equal to
+             * pwm signal's period the output will be permanently high.
+             * If value is greater than pwm signal's period the value passed will be ignored
+             * 
+             * @param channel: the channel number, between 1 and 4. Please note that not all
+             * the timers have four channels!!
+             * @param value: the channel's High time period, expressed in counter ticks
+             * 
+             * TODO: make this function thread safe
+             */
+            void setOnPeriod(uint16_t channel, uint16_t value)
+            {
+                if(value > period)
+                    return;
+                
+                switch(channel)
+                {
+                    case 1:
+                        periph_base->CCR1 = value;
+                        break;
+                    
+                    case 2:
+                        periph_base->CCR2 = value;
+                        break;  
+                    
+                    case 3:
+                        periph_base->CCR3 = value;
+                        break;
+                        
+                   case 4:
+                        periph_base->CCR4 = value;
+                        break;
+                }  
+            }
+
         };
 
         /**
@@ -339,77 +563,6 @@ namespace HAL {
             }
         };
 
-        /**
-         * PwmGenerator (type)
-         *
-         * A timer peripheral is used to generate a pwm signal
-         * Please refer to MCU's datasheet and programming manual
-         * for further informations.
-         * 
-         */
-        template<typename P>
-        class PwmGenerator : public TimerBase<P> {
-            //***************************
-            //* Members                 *
-            //***************************
-        private:
-            uint32_t counter_freq;
-            uint32_t period;
-
-            //***************************
-            //* Methods                 *
-            //***************************
-        public:
-            using TimerBase<P>::periph_base;
-            using TimerBase<P>::bus_freq;
-            
-            /**
-             * @param counter_freq: the timer's counting frequency. It determines the tick width.
-             * @param period: the generated pwm signal's period, in counter ticks
-             */
-
-            PwmGenerator(uint32_t counter_freq, uint32_t period) : counter_freq(counter_freq), period(period)
-            {
-                // Set counter frequency through prescaler
-                periph_base->PSC = (bus_freq() / counter_freq) - 1;
-                
-                // Set pwm period through reload register value
-                periph_base->ARR = period;
-                
-                // Set timer's pwm mode 1, see programming manual
-                periph_base->CCMR1 |= TIM_CCMR1_OC1M_1;
-                periph_base->CCMR1 |= TIM_CCMR1_OC1M_2;
-                
-                // CCR1 preload at every update event
-                periph_base->CCMR1 |= TIM_CCMR1_OC1PE;
-                
-                // Enables channel 1
-                periph_base->CCER |= TIM_CCER_CC1E;
-                periph_base->CCR1 = 0;
-                periph_base->CNT = 0;
-                
-                // Dummy update event in order to load registers
-                periph_base->EGR = TIM_EGR_UG;
-                
-#ifndef _ARCH_CORTEXM3_STM32
-                // Only STM32F1xxx and STM32F2xxx have it
-                periph_base->BDTR |= TIM_BDTR_MOE;
-#endif
-                // Auto reload enabled
-                periph_base->CR1 |= TIM_CR1_ARPE;
-            }
-
-            /**
-             * Set pwm signal's ON period, expressed in counter ticks
-             */
-            
-            void set_duty(uint32_t value) {
-
-                if (value <= period)
-                    periph_base->CCR1 = value;
-            }
-
-        };
     }
 }
 
