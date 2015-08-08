@@ -2,6 +2,8 @@
 #define STM32_TIMER_HAL_TIMER_BASE_HPP
 
 #include "peripheral.hpp"
+#include <cmath>
+#include <algorithm>
 
 namespace HAL {
     namespace Timer {
@@ -312,6 +314,41 @@ namespace HAL {
             }
             
             /**
+             * Calling this constructor the pwm generator will create a signal with frequency
+             * specified by sigFreq and whose duty cycle can be set using a value in the range
+             * between 0 and 65535. Note that the counter frequency will be 65535 * sigFreq
+             * 
+             * @param sigFreq: the generated pwm signal's frequency expressed in hertz
+             * @param isAdvanced: set it to true if you are using advanced control timers (TIM1 & TIM8)
+             */
+            PwmGenerator(uint32_t sigFreq, bool isAdvanced = false)
+            {
+                period(0xFFFF);
+                
+                // Set counter frequency through prescaler
+                periph_base->PSC = (bus_freq() / (0xFFFF * sigFreq)) - 1;
+                
+                // Set pwm period through reload register value
+                periph_base->ARR = 0xFFFF;
+                
+                //clear counter register
+                periph_base->CNT = 0;
+                
+                // Dummy update event in order to load registers
+                periph_base->EGR = TIM_EGR_UG;
+                
+                /* this is a workaround made because advanced control timers must
+                 * have MOE bit set in order to have outputs working properly.
+                 * If MOE bit is cleared no output signal is generated at all */
+                
+                if(isAdvanced)
+                    periph_base->BDTR |= TIM_BDTR_MOE;
+
+                // Auto reload enabled
+                periph_base->CR1 |= TIM_CR1_ARPE;
+            }
+            
+            /**
              * Starts the timer. Calling this function makes the timer generating
              * pwm signal(s) on its output(s)
              */
@@ -426,10 +463,9 @@ namespace HAL {
              * 
              * TODO: make this function thread safe
              */
-            void setOnPeriod(uint16_t channel, uint16_t value)
+            void setOnPeriod(uint8_t channel, uint16_t value)
             {
-                if(value > period)
-                    return;
+                value = min(period,max(0,value));
                 
                 switch(channel)
                 {
@@ -450,18 +486,50 @@ namespace HAL {
                         break;
                 }  
             }
+            
+            /**
+             * Sets pwm signal's duty cycle.
+             * 
+             * @param channel: the channel number, between 1 and 4. Please note that not all
+             * the timers have four channels!!
+             * @param duty: duty cycle to be set, between 0 to 100
+             */
+            void setDuty(uint8_t channel, uint8_t duty)
+            {
+                duty = min(100,max(0,duty));
+                
+                setOnPeriod(channel, duty*(period/100));                
+            }
+            
+            /**
+             * Sets pwm signal's duty cycle.
+             * 
+             * @param channel: the channel number, between 1 and 4. Please note that not all
+             * the timers have four channels!!
+             * @param duty: duty cycle to be set, between 0.0f to 1.0f (floating point value
+             */
+            void setDuty(uint8_t channel, float duty)
+            {
+                duty = min(1.0f,max(0.0f,duty));
+                
+                setOnPeriod(channel, duty*period);                
+            }
+            
+            
 
         };
 
         /**
          * PwmMeasure (type)
          *
-         * A timer peripheral is used to capture (aka measure)
-         * the period length and the Ton length of a PWM signal
+         * A timer peripheral is used in input capture mode to measure
+         * the period length and the Ton length of a PWM signal.
+         * The period length is stored in CCR1, the Ton value in CCR2.
+         * Both of them are expressed in terms of number of counter ticks
+         * (one counter tick in seconds = 1/counter_freq)
+         * 
          * Please refer to MCU's datasheet and programming manual
          * for further informations.
-         * The period value expressed in counter ticks is measured in CCR1,
-         * the Ton value in CCR2 
          */
         template<typename P>
         class PwmMeasure : public TimerBase<P> {
@@ -479,7 +547,10 @@ namespace HAL {
             using TimerBase<P>::bus_freq;
 
             /**
-             * @param counter_freq: the timer's counting frequency. It determines the tick width.
+             * @param counter_freq: the timer's counting frequency in hertz, it determines
+             * the tick width expressed in seconds.
+             * Please note that the maximum counter_freq has to be equal to 65535 * pwm_freq,
+             * otherwise the counter will incur in a rollover, leading to wrong measurements
              */
             
             PwmMeasure(uint32_t counter_freq) : counter_freq(counter_freq)
@@ -514,13 +585,15 @@ namespace HAL {
              *
              * @return true if the the flag is set, false otherwise
              */
-            bool width_event() {
-                if (periph_base->SR & TIM_SR_CC2IF) {
+            bool width_event()
+            {
+                if (periph_base->SR & TIM_SR_CC2IF)
+                {
                     periph_base->SR &= ~TIM_SR_CC2IF;
                     return true;
-                } else {
-                    return false;
                 }
+                
+                return false;
             }
 
             /**
@@ -531,13 +604,15 @@ namespace HAL {
              *
              * @return true if the the flag is set, false otherwise
              */
-            bool period_event() {
-                if (periph_base->SR & TIM_SR_CC1IF) {
+            bool period_event()
+            {
+                if (periph_base->SR & TIM_SR_CC1IF)
+                {
                     periph_base->SR &= ~TIM_SR_CC1IF;
                     return true;
-                } else {
-                    return false;
                 }
+                
+                return false;
             }
 
             /**
@@ -547,7 +622,8 @@ namespace HAL {
              *
              * @return the latest pulse width measure, expressed in counter ticks
              */
-            uint32_t get_pulse_width() {
+            uint32_t get_pulse_width()
+            {
                 return periph_base->CCR2;
             }
 
@@ -558,7 +634,8 @@ namespace HAL {
              *
              * @return the latest period measure, expressed in counter ticks
              */
-            uint32_t get_period() {
+            uint32_t get_period()
+            {
                 return periph_base->CCR1;
             }
         };
