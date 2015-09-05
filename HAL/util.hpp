@@ -2,7 +2,12 @@
 #define STM32_TIMER_HAL_UTIL_HPP
 
 #include <cstdint>
+
+#ifndef _MIOSIX
 #include "cortex/stm32f4xx.h"
+#else
+#include "miosix.h"
+#endif
 
 namespace HAL {
     /**

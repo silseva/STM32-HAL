@@ -125,8 +125,8 @@ namespace HAL {
 
         // AHB2 peripherals
         typedef Peripheral<Bus::b_AHB2, (__pointer) (DCMI_BASE), RCC_AHB2ENR_DCMIEN> p_DCMI;
-        typedef Peripheral<Bus::b_AHB2, (__pointer) (CRYP_BASE), RCC_AHB2ENR_CRYPEN> p_CRYP;
-        typedef Peripheral<Bus::b_AHB2, (__pointer) (HASH_BASE), RCC_AHB2ENR_HASHEN> p_HASH;
+//         typedef Peripheral<Bus::b_AHB2, (__pointer) (CRYP_BASE), RCC_AHB2ENR_CRYPEN> p_CRYP;
+//         typedef Peripheral<Bus::b_AHB2, (__pointer) (HASH_BASE), RCC_AHB2ENR_HASHEN> p_HASH;
         typedef Peripheral<Bus::b_AHB2, (__pointer) (RNG_BASE), RCC_AHB2ENR_RNGEN> p_RNG;
     }
 }

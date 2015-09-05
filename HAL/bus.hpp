@@ -2,7 +2,12 @@
 #define STM32_TIMER_HAL_BUS_HPP
 
 #include "util.hpp"
+
+#ifndef _MIOSIX
 #include "cortex/stm32f4xx.h"
+#else
+#include "miosix.h"
+#endif
 
 namespace HAL {
     namespace Bus {

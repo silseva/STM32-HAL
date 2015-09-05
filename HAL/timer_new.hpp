@@ -404,12 +404,12 @@ namespace HAL {
                         break;  
                     
                     case 3:
-                        periph_base->CCMR1 |= TIM_CCMR1_OC3M_2 | TIM_CCMR1_OC3M_1 | TIM_CCMR1_OC3PE;
+                        periph_base->CCMR2 |= TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3PE;
                         periph_base->CCER |= TIM_CCER_CC3E;
                         break;
                         
                    case 4:
-                        periph_base->CCMR1 |= TIM_CCMR1_OC4M_2 | TIM_CCMR1_OC4M_1 | TIM_CCMR1_OC4PE;
+                        periph_base->CCMR2 |= TIM_CCMR2_OC4M_2 | TIM_CCMR2_OC4M_1 | TIM_CCMR2_OC4PE;
                         periph_base->CCER |= TIM_CCER_CC4E;
                         break;
                 }
@@ -465,7 +465,7 @@ namespace HAL {
              */
             void setOnPeriod(uint8_t channel, uint16_t value)
             {
-                value = min(period,max(0,value));
+                value = std::min(static_cast<uint16_t>(period),std::max(static_cast<uint16_t>(0),value));   //Ugly bugfix, perhaps it can be done better??
                 
                 switch(channel)
                 {
@@ -496,8 +496,7 @@ namespace HAL {
              */
             void setDuty(uint8_t channel, uint8_t duty)
             {
-                duty = min(100,max(0,duty));
-                
+                duty = std::min(100,std::max(0,static_cast<int>(duty)));     //(perhaps) another ugly bugfix...                
                 setOnPeriod(channel, duty*(period/100));                
             }
             
@@ -510,7 +509,7 @@ namespace HAL {
              */
             void setDuty(uint8_t channel, float duty)
             {
-                duty = min(1.0f,max(0.0f,duty));
+                duty = std::min(1.0f,std::max(0.0f,duty));
                 
                 setOnPeriod(channel, duty*period);                
             }
@@ -639,7 +638,49 @@ namespace HAL {
                 return periph_base->CCR1;
             }
         };
+        
+        /**
+         * Timer used in encoder interface mode.
+         * Encoder interface mode acts simply as an external clock with direction selection. This
+         * means that the counter just counts continuously between 0 and the auto-reload value in the
+         * TIMx_ARR register (0 to ARR or ARR down to 0 depending on the direction
+         */
+        template<typename P>
+        class EncoderCounter: public TimerBase<P> {
+            //***************************
+            //* Members                 *
+            //***************************
+        private:
+//             uint32_t counter_freq;
 
+            //***************************
+            //* Methods                 *
+            //***************************
+        public:
+            using TimerBase<P>::periph_base;
+            using TimerBase<P>::bus_freq;
+            
+            enum mode
+            {
+                T1_ONLY,
+                T2_ONLY,
+                BOTH
+            };
+            
+        /**
+         * @param reload: auto-reload register value. Counter can count between 0 and this value.
+         * @param mode: encoder interface mode.
+         * Available modes:
+         * -> T1_ONLY: counting only on TI1 edges only
+         * -> T2_ONLY: counting only on TI2 edges only
+         * -> BOTH: counting both on TI1 edges and TI2 edges
+         * 
+         */
+        EncoderCounter(uint16_t reload = 0xFFFF, uint8_t mode = T1_ONLY)
+        {
+        }
+        
+        };
     }
 }
 
