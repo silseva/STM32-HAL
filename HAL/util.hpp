@@ -1,5 +1,5 @@
-#ifndef STM32_TIMER_HAL_UTIL_HPP
-#define STM32_TIMER_HAL_UTIL_HPP
+#ifndef UTIL_HPP
+#define UTIL_HPP
 
 #include <cstdint>
 
@@ -25,6 +25,7 @@ namespace HAL {
      * //TODO
      */
     typedef uint32_t __mask;
+    
 }
 
 #endif //STM32_TIMER_HAL_UTIL_HPP

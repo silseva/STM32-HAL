@@ -1,5 +1,5 @@
-#ifndef STM32_TIMER_HAL_PERIPHERAL_HPP
-#define STM32_TIMER_HAL_PERIPHERAL_HPP
+#ifndef PERIPHERAL_HPP
+#define PERIPHERAL_HPP
 
 #include "bus.hpp"
 #include "util.hpp"

@@ -1,6 +1,7 @@
-#ifndef STM32_TIMER_HAL_BUS_HPP
-#define STM32_TIMER_HAL_BUS_HPP
+#ifndef BUS_HPP
+#define BUS_HPP
 
+#define _MIOSIX
 #include "util.hpp"
 
 #ifndef _MIOSIX
