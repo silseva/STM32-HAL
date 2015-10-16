@@ -1,12 +1,7 @@
 #ifndef TIMER_HPP
 #define TIMER_HPP
 
-#include "peripheral.hpp"
-
-#include "timer_impl/basic_timer.hpp"
-#include "timer_impl/pwm_generator.hpp"
-#include "timer_impl/pwm_measure.hpp"
-#include "timer_impl/encoder_counter.hpp"
+#include "../peripheral.hpp"
 
 #include <cmath>
 #include <algorithm>
@@ -73,15 +68,15 @@ namespace HAL {
             
             static constexpr int mapAlternateFunction()
             {
-                return periph_base == Peripheral::p_TIM1? 1 :
-                       periph_base == Peripheral::p_TIM2? 1 :
-                       periph_base == Peripheral::p_TIM3? 2 :
-                       periph_base == Peripheral::p_TIM4? 2 :
-                       periph_base == Peripheral::p_TIM5? 2 :
-                       periph_base == Peripheral::p_TIM8? 3 :
-                       periph_base == Peripheral::p_TIM9? 3 :
-                       periph_base == Peripheral::p_TIM10? 3 :
-                       periph_base == Peripheral::p_TIM11? 3 : 0;  
+                return P::periph_base == Peripheral::p_TIM1::periph_base? 1 :
+                       P::periph_base == Peripheral::p_TIM2::periph_base? 1 :
+                       P::periph_base == Peripheral::p_TIM3::periph_base? 2 :
+                       P::periph_base == Peripheral::p_TIM4::periph_base? 2 :
+                       P::periph_base == Peripheral::p_TIM5::periph_base? 2 :
+                       P::periph_base == Peripheral::p_TIM8::periph_base? 3 :
+                       P::periph_base == Peripheral::p_TIM9::periph_base? 3 :
+                       P::periph_base == Peripheral::p_TIM10::periph_base? 3 :
+                       P::periph_base == Peripheral::p_TIM11::periph_base? 3 : 0;  
             }
         };   
     }

@@ -2,7 +2,7 @@
 #ifndef PWM_GENERATOR_HPP
 #define PWM_GENERATOR_HPP
 
-#include "../timer.hpp"
+#include "timer.hpp"
 
 namespace HAL {
     namespace Timer {
@@ -31,7 +31,7 @@ namespace HAL {
             uint32_t period;
 
 #ifdef _MIOSIX           
-            miosix::GpioPin pins[4];
+            miosix::GpioPin *pins[4];
 #endif        
 
             //*************************** 
@@ -145,7 +145,7 @@ namespace HAL {
              * TODO: make this function thread safe
              */
             
-            void enable(uint8_t channel)
+            void chEnable(uint8_t channel)
             {
                 if(TimerBase<P>::is_enabled())
                     return;
@@ -190,15 +190,37 @@ namespace HAL {
              * TODO: make this function thread safe
              */
             
-            void enable(uint8_t channel, miosix::GpioPin gpio)
+            void chEnable(uint8_t channel, miosix::GpioPin *gpio)
             {
                 if(TimerBase<P>::is_enabled())
                     return;
                 
                 pins[channel] = gpio;
-                gpio.mode(miosix::Mode::ALTERNATE);
-                gpio.alternateFunction(TimerBase<P>::mapAlternateFunction());
-                enable(channel);                
+                gpio->mode(miosix::Mode::ALTERNATE);
+                gpio->alternateFunction(TimerBase<P>::mapAlternateFunction());
+                
+                switch(channel)
+                {
+                    case 1:
+                        periph_base->CCMR1 |= TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1PE;
+                        periph_base->CCER |= TIM_CCER_CC1E;
+                        break;
+                    
+                    case 2:
+                        periph_base->CCMR1 |= TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1 | TIM_CCMR1_OC2PE;
+                        periph_base->CCER |= TIM_CCER_CC2E;
+                        break;  
+                    
+                    case 3:
+                        periph_base->CCMR2 |= TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3PE;
+                        periph_base->CCER |= TIM_CCER_CC3E;
+                        break;
+                        
+                   case 4:
+                        periph_base->CCMR2 |= TIM_CCMR2_OC4M_2 | TIM_CCMR2_OC4M_1 | TIM_CCMR2_OC4PE;
+                        periph_base->CCER |= TIM_CCER_CC4E;
+                        break;
+                }              
             }
 #endif
             /**
@@ -211,8 +233,8 @@ namespace HAL {
              * 
              * TODO: make this function thread safe
              */
-            
-            void disable(uint8_t channel)
+#ifndef _MIOSIX         
+            void chDisable(uint8_t channel)
             {
                 if(TimerBase<P>::is_enabled())
                     return;
@@ -241,25 +263,36 @@ namespace HAL {
                 }
             }
             
-#ifdef _MIOSIX
-            /**
-             * Disables a channel. Calling this function will "disconnect" the channel from the
-             * peripheral, providing the corresponding output pin from generating the pwm signal.
-             * This function must be called with timer stopped.
-             * 
-             * @param channel: the channel number, between 1 and 4. Please note that not all
-             * the timers have four channels!!
-             * 
-             * TODO: make this function thread safe
-             */
-            
-            void disable(uint8_t channel)
+#else
+            void chDisable(uint8_t channel)
             {
                 if(TimerBase<P>::is_enabled())
                     return;
                 
-                disable(channel);
-                pins[channel].mode(miosix::Mode::INPUT);
+                switch(channel)
+                {
+                    case 1:
+                        periph_base->CCR1 = 0;
+                        periph_base->CCER &= ~TIM_CCER_CC1E;
+                        break;
+                    
+                    case 2:
+                        periph_base->CCR2 = 0;
+                        periph_base->CCER &= ~TIM_CCER_CC2E;
+                        break;  
+                    
+                    case 3:
+                        periph_base->CCR3 = 0;
+                        periph_base->CCER &= ~TIM_CCER_CC3E;
+                        break;
+                        
+                   case 4:
+                       periph_base->CCR4 = 0;
+                        periph_base->CCER &= ~TIM_CCER_CC4E;
+                        break;
+                }
+                
+                pins[channel]->mode(miosix::Mode::INPUT);
             }
 #endif
             

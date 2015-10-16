@@ -2,7 +2,7 @@
 #ifndef BASIC_TIMER_HPP
 #define BASIC_TIMER_HPP
 
-#include "../timer.hpp"
+#include "timer.hpp"
 
 namespace HAL {
     namespace Timer {

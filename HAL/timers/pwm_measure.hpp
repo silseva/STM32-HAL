@@ -2,7 +2,7 @@
 #ifndef PWM_MEASURE_HPP
 #define PWM_MEASURE_HPP
 
-#include "../timer.hpp"
+#include "timer.hpp"
 
 namespace HAL {
     namespace Timer {

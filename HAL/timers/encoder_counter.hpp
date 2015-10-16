@@ -2,7 +2,7 @@
 #ifndef ENCODER_COUNTER_HPP
 #define ENCODER_COUNTER_HPP
 
-#include "../timer.hpp"
+#include "timer.hpp"
 
 namespace HAL {
     namespace Timer {
