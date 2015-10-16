@@ -4,6 +4,10 @@
 #include "bus.hpp"
 #include "util.hpp"
 
+#ifdef _MIOSIX
+#include "miosix.h"
+#endif
+
 namespace HAL {
     namespace Peripheral {
         template<
@@ -16,20 +20,61 @@ namespace HAL {
             static constexpr __pointer periph_base = _periph_base;
             static constexpr __mask enable_bit = _enable_bit;
 
+            /**
+             * Enables peripheral's clock via clock-gating register (RCC register).
+             * 
+             * NOTE: this function is thread-safe ONLY inside miosix environment,
+             *       in other environments you have to ensure it other ways.
+             */
+#ifdef _MIOSIX            
+            static void enable() {
+                auto enable_register = (uint32_t *) bus::enable_register;
+                
+                {
+                    miosix::FastInterruptDisableLock dLock;
+                    
+                    if (enable_bit)
+                        *enable_register |= enable_bit;
+                    
+                    RCC_SYNC();
+                }
+            }
+#else
             static void enable() {
                 auto enable_register = (uint32_t *) bus::enable_register;
 
                 if (enable_bit)
                     *enable_register |= enable_bit;
             }
+#endif
+            
+            /**
+             * Disbles peripheral's clock via clock-gating register (RCC register).
+             * 
+             * NOTE: this function is thread-safe ONLY inside miosix environment,
+             *       in other environments you have to ensure it other ways.
+             */
+#ifdef _MIOSIX
+            static void disable() {
+                auto enable_register = (uint32_t *) bus::enable_register;
 
+                {
+                    miosix::FastInterruptDisableLock dLock;
+                    
+                    if (enable_bit)
+                        *enable_register &= ~enable_bit;
+                    
+                    RCC_SYNC();
+                }
+            }
+#else
             static void disable() {
                 auto enable_register = (uint32_t *) bus::enable_register;
 
                 if (enable_bit)
                     *enable_register &= ~enable_bit;
             }
-
+#endif
             static bool is_enabled() {
                 auto enable_register = (uint32_t *) bus::enable_register;
 
