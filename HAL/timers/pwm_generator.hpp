@@ -111,7 +111,7 @@ namespace HAL {
              * Starts the timer. Calling this function makes the timer generating
              * pwm signal(s) on its output(s)
              */
-            void start()
+            inline void start()
             {
                 if(TimerBase<P>::is_enabled())
                     return;
@@ -123,7 +123,7 @@ namespace HAL {
              * Stops the timer. Calling this function makes the timer stop
              * generating pwm signal(s) on its output(s)
              */
-            void stop()
+            inline void stop()
             {
                 if(!TimerBase<P>::is_enabled())
                     return;

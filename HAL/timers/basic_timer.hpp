@@ -65,7 +65,7 @@ namespace HAL {
              * 
              */
 
-            void start()
+            inline void start()
             {
                 TimerBase<P>::enable();
             }
@@ -76,7 +76,7 @@ namespace HAL {
              * 
              */
 
-            void stop()
+            inline void stop()
             {
                 TimerBase<P>::disable();
             }
