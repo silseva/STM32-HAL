@@ -1,7 +1,6 @@
 #ifndef BUS_HPP
 #define BUS_HPP
 
-#define _MIOSIX
 #include "util.hpp"
 
 #ifndef _MIOSIX
